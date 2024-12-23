@@ -687,12 +687,14 @@ const UserManagementScreen: FC = (): ReactElement => {
           </Alert>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="danger" onClick={DisableTwoFactorButton}>
-            Disable Two-Factor Authentication
-          </Button>
-          <Button variant="secondary" onClick={() => setShowPassword(!showPassword)}>
-            {showPassword ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
-          </Button>
+          <ButtonGroup>
+            <Button variant="danger" onClick={DisableTwoFactorButton}>
+              Disable Two-Factor Authentication
+            </Button>
+            <Button variant="secondary" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
+            </Button>
+          </ButtonGroup>
         </Modal.Footer>
       </Modal>
       <Footer />

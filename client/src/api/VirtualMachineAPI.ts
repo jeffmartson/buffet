@@ -47,7 +47,7 @@ interface IsoFile {
 }
 
 interface VmDetails {
-  wsport: number;
+  websocket_port: number;
   id: number;
   name: string;
   version: string;

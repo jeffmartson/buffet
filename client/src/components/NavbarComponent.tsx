@@ -55,8 +55,7 @@ const NavbarComponent: FC = (): ReactElement => {
         fixed="top"
       >
         <Container>
-          {/* display development warning if in development mode */}
-          <Navbar.Brand href={user ? "/os" : "/"} style={{ color: "white" }}>
+          <Navbar.Brand href={user ? "/list/" : "/"} style={{ color: "white" }}>
             <img
               alt=""
               src={logo}
@@ -94,11 +93,11 @@ const NavbarComponent: FC = (): ReactElement => {
                   id="basic-nav-dropdown"
                   menuVariant="dark"
                 >
-                  <NavDropdown.Item href="/account">
+                  <NavDropdown.Item href="/account/">
                     Manage Account
                   </NavDropdown.Item>
                   {user.role === "admin" ? ( // If user is an admin, show the admin panel link
-                    <NavDropdown.Item href="/admin">
+                    <NavDropdown.Item href="/admin/">
                       Admin Panel
                     </NavDropdown.Item>
                   ) : null}
@@ -109,14 +108,14 @@ const NavbarComponent: FC = (): ReactElement => {
               </Nav>
             ) : (
               <Nav>
-                <Nav.Link href="/login">Login</Nav.Link>
+                <Nav.Link href="/login/">Login</Nav.Link>
               </Nav>
             )}
           </Navbar.Collapse>
         </Container>
       </Navbar>
 
-      {/* Are you sure you want to log out? modal */}
+      {/* Logout modal */}
       <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)} centered>
         <Modal.Header closeButton>
           <Modal.Title>Log Out</Modal.Title>

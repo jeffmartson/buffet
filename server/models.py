@@ -120,27 +120,22 @@ class ApplicationConfigDb(db.Model):
     """Contains the configuration for the server. This overrides the .env file. Modify the values in the database to change the configuration."""
 
     id = db.Column(db.Integer, primary_key=True)
-    API_URL = db.Column(db.String(255), nullable=True)
     CLIENT_URL = db.Column(db.String(255), nullable=True)
     CORS_HEADERS = db.Column(db.String(255), nullable=True)
-
     GUNICORN_ACCESS_LOG = db.Column(db.String(255), nullable=True)
     GUNICORN_BIND_ADDRESS = db.Column(db.String(255), nullable=True)
     GUNICORN_ERROR_LOG = db.Column(db.String(255), nullable=True)
     GUNICORN_LOG_LEVEL = db.Column(db.String(255), nullable=True)
+    GUNICORN_SSL_ENABLED = db.Column(db.Boolean, nullable=True)
     GUNICORN_WORKER_CLASS = db.Column(db.String(255), nullable=True)
-
     ISO_DIR = db.Column(db.String(255), nullable=True)
-
     JWT_ACCESS_TOKEN_EXPIRES = db.Column(db.Interval, nullable=True)
     JWT_COOKIE_CSRF_PROTECT = db.Column(db.Boolean, nullable=True)
     JWT_COOKIE_SECURE = db.Column(db.Boolean, nullable=True)
     JWT_REFRESH_TOKEN_EXPIRES = db.Column(db.Interval, nullable=True)
     JWT_SECRET_KEY = db.Column(db.String(255), nullable=True)
     JWT_TOKEN_LOCATION = db.Column(db.String(255), nullable=True)
-
     KVM_ENABLED = db.Column(db.Boolean, nullable=True)
-
     MAIL_ASCII_ATTACHMENTS = db.Column(db.Boolean, nullable=True)
     MAIL_DEFAULT_SENDER = db.Column(db.String(255), nullable=True)
     MAIL_MAX_EMAILS = db.Column(db.Integer, nullable=True)
@@ -150,24 +145,17 @@ class ApplicationConfigDb(db.Model):
     MAIL_USE_SSL = db.Column(db.Boolean, nullable=True)
     MAIL_USE_TLS = db.Column(db.Boolean, nullable=True)
     MAIL_USERNAME = db.Column(db.String(255), nullable=True)
-
     MAX_VM_CORES = db.Column(db.Integer, nullable=True)
     MAX_VM_COUNT = db.Column(db.Integer, nullable=True)
     MAX_VM_MEMORY = db.Column(db.Integer, nullable=True)
-
+    RATE_LIMIT = db.Column(db.String(255), nullable=True)
     SECRET_KEY = db.Column(db.String(255), nullable=True)
-
     SQLALCHEMY_DATABASE_URI = db.Column(db.String(255), nullable=True)
     SQLALCHEMY_ECHO = db.Column(db.Boolean, nullable=True)
     SQLALCHEMY_TRACK_MODIFICATIONS = db.Column(db.Boolean, nullable=True)
-
-    WEBSOCKET_SSL_ENABLED = db.Column(db.Boolean, nullable=True)
-    GUNICORN_SSL_ENABLED = db.Column(db.Boolean, nullable=True)
-
     SSL_CERTIFICATE_PATH = db.Column(db.String(255), nullable=True)
     SSL_KEY_PATH = db.Column(db.String(255), nullable=True)
-
-    RATE_LIMIT = db.Column(db.String(255), nullable=True)
-
+    STATIC_DIR = db.Column(db.String(255), nullable=True)
     VM_PORT_START = db.Column(db.Integer, nullable=True)
     WEBSOCKET_PORT_START = db.Column(db.Integer, nullable=True)
+    WEBSOCKET_SSL_ENABLED = db.Column(db.Boolean, nullable=True)

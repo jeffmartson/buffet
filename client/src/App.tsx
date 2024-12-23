@@ -9,7 +9,7 @@ import OperatingSystemListScreen from "./screens/OperatingSystemListScreen.tsx";
 import LoginRegistrationScreen from "./screens/LoginRegistrationScreen.tsx";
 import UserManagementScreen from "./screens/UserManagementScreen.tsx";
 import VirtualMachineViewScreen from "./screens/VirtualMachineViewScreen.tsx";
-import HomeScreen from "./screens/HomeScreen";
+import HomeScreen from "./screens/HomeScreen.tsx";
 import NotFoundScreen from "./screens/NotFoundScreen.tsx";
 
 const App: FC = () => {
@@ -23,23 +23,23 @@ const App: FC = () => {
               path="/"
               element={<ProtectedRoute element={<HomeScreen />} />} />
             <Route
-              path="/login"
+              path="/login/"
               element={<ProtectedRoute preventForLoggedIn element={<LoginRegistrationScreen />} />}
             />
             <Route
-              path="/os"
+              path="/list/"
               element={<ProtectedRoute requireLogin element={<OperatingSystemListScreen />} />}
             />
             <Route
-              path="/admin"
+              path="/admin/"
               element={<ProtectedRoute requireLogin requiredRole="admin" element={<AdminPanelScreen />} />}
             />
             <Route
-              path="/account"
+              path="/account/"
               element={<ProtectedRoute requireLogin element={<UserManagementScreen />} />}
             />
             <Route
-              path="/vm"
+              path="/view/"
               element={<ProtectedRoute requireLogin element={<VirtualMachineViewScreen />} />}
             />
           </Routes>

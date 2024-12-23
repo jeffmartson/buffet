@@ -119,7 +119,7 @@ const HomeScreen: FC = (): ReactElement => {
                             is free as in freedom, and free as in beer.
                         </p>
                         <ButtonGroup className="d-flex">
-                            <Button variant="primary" href="/login">
+                            <Button variant="primary" href="/login/">
                                 Get Started
                             </Button>
                         </ButtonGroup>

@@ -447,7 +447,12 @@ def logout():
     """
 
     # Stop VM if the user has one, if not just logout
-    vm = VirtualMachines.query.filter_by(user_id=get_jwt_identity()).first()
+    user = Users.query.filter_by(id=get_jwt_identity()).first()
+    if not user:
+        return jsonify({"message": "Invalid user"}), 401
+
+    # Get the user's virtual machine
+    vm = VirtualMachines.query.filter_by(user_id=user.id).first()
     if vm:
         try:
             subprocess.Popen(
@@ -456,15 +461,13 @@ def logout():
                 stderr=subprocess.PIPE,
             )
         except subprocess.CalledProcessError:
-            return jsonify({"message": "Error deleting virtual machine"}), 500
+            return jsonify({"message": "Error logging out"}), 500
 
         db.session.delete(vm)
         db.session.commit()
 
-    # Unset the JWT cookies
     resp = jsonify({"message": "Logout successful"})
     unset_jwt_cookies(resp)
-
     return resp, 200
 
 
@@ -802,12 +805,12 @@ def setup_2fa():
     # Generate a QR code for the user to scan
     uri = pyotp.totp.TOTP(secret).provisioning_uri(name=user.username, issuer_name="Buffet")
     img = qrcode.make(uri)
-    img.save("qrcode-" + user.username + ".png")
+    img.save("/tmp/qrcode-" + user.username + ".png")
 
     # Return the QR code to the user to scan in base64 format
-    with open("qrcode-" + user.username + ".png", "rb") as f:
+    with open("/tmp/qrcode-" + user.username + ".png", "rb") as f:
         img_base64 = base64.b64encode(f.read()).decode("utf-8")
-    os.remove("qrcode-" + user.username + ".png")
+    os.remove("/tmp/qrcode-" + user.username + ".png")
 
     return jsonify({"message": "2FA setup", "qr_code": img_base64}), 200
 

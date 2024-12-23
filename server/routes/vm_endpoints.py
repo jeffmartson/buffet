@@ -22,6 +22,7 @@ import re
 import random
 import subprocess
 import socket
+
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -70,13 +71,19 @@ def get_iso_architecture(iso):
     return None
 
 
-def find_available_port():
-    """Find the next available VM port."""
-    max_count = int(ApplicationConfig.MAX_VM_COUNT)
-    for port_int in range(max_count):
-        if not VirtualMachines.query.filter_by(port=port_int + int(ApplicationConfig.VM_PORT_START)).first():
-            return port_int
-    return None
+def get_next_port():
+    """Get the next available port."""
+    port = int(ApplicationConfig.VM_PORT_START)
+    while True:
+        if not VirtualMachines.query.filter_by(port=port).first() and is_port_available(port):
+            return port
+        port += 1
+
+
+def is_port_available(port):
+    """Check if a port is available."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex(("localhost", port)) != 0
 
 
 def create_log_directory(user_id):
@@ -115,9 +122,7 @@ def start_vm_process(arch, iso_dir, port_int, user_id):
         "-object",
         f"filter-dump,id=f1,netdev=net0,file=logs/{datetime.now().date()}/{user_id}/{datetime.now().strftime('%H:%M:%S')}-{iso_dir.split('/')[-1]}.pcap",
         "-vnc",
-        f":{port_int},to={ApplicationConfig.MAX_VM_COUNT},password=on"
-        if get_host_os_type() != "Darwin"
-        else f":{port_int},to={ApplicationConfig.MAX_VM_COUNT},password=off",
+        f":{port_int},password=on" if get_host_os_type() != "Darwin" else f":{port_int},password=off",
         "-qmp",
         f"unix:/tmp/qmp-{user_id}.sock,server,wait=off",
     ]
@@ -127,19 +132,12 @@ def start_vm_process(arch, iso_dir, port_int, user_id):
         command.extend(["-enable-kvm", "-cpu", "host"])
     # Add HVF accelerator if running on macOS with an M series chip, and ISO is ARM64
     if get_host_os_type() == "Darwin" and get_hardware_platform() == "arm64" and arch == "aarch64":
-        # get the latest version of qemu by searching for the latest version in the directory
-        command.extend(["-machine", "virt,accel=hvf", "-device", "virtio-gpu-pci"])
-    # Add HAXM accelerator if running on macOS with an Intel chip
-    elif get_host_os_type() == "Darwin" and get_hardware_platform() == "x86_64":
-        command.extend(["-machine", "q35,accel=hax", "-device", "virtio-gpu-pci"])
+        command.extend(["-machine", "virt,accel=hvf", "-device", "virtio-gpu-pci", "-display", "default,show-cursor=on"])
+    # Use standard QEMU VGA if running on Linux and not using KVM
     elif get_host_os_type() == "Linux" and arch == "x86_64" and not ApplicationConfig.KVM_ENABLED:
-        # Use standard QEMU VGA if running on Linux
         command.extend(["-cpu", "qemu64", "-device", "virtio-vga"])
 
-    # Print the command for debugging
-    print("Executing command:", " ".join(command))
-
-    process = subprocess.Popen(command)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     return process.pid
 
@@ -148,6 +146,7 @@ async def setup_qmp_client(user_id):
     """Setup QMP client for the virtual machine."""
     qmp = QMPClient(f"virtual-machine-{user_id}")
     await qmp.connect(f"/tmp/qmp-{user_id}.sock")
+
     return qmp
 
 
@@ -160,18 +159,31 @@ def start_websockify(websocket_port, port):
         cert_path = ApplicationConfig.SSL_CERTIFICATE_PATH
         key_path = ApplicationConfig.SSL_KEY_PATH
 
-        process = subprocess.Popen([
-            "websockify",
-            "--cert",
-            cert_path,
-            "--key",
-            key_path,
-            "--ssl-only",
-            f"{client_url}:{websocket_port}",
-            f"{api_url}:{port}",
-        ])
+        process = subprocess.Popen(
+            [
+                "websockify",
+                "--cert",
+                cert_path,
+                "--key",
+                key_path,
+                "--ssl-only",
+                f"{client_url}:{websocket_port}",
+                f"{api_url}:{port}",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
     else:
-        process = subprocess.Popen(["websockify", f"{client_url}:{websocket_port}", f"{api_url}:{port}"])
+        process = subprocess.Popen(
+            [
+                "websockify",
+                f"{client_url}:{websocket_port}",
+                f"{api_url}:{port}",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
     return process.pid
 
 
@@ -226,19 +238,22 @@ async def create_vm():
     if not arch:
         return jsonify({"message": "Invalid ISO"}), 404
 
-    port_int = find_available_port()
-    if port_int is None:
-        return jsonify({"message": "The server is at maximum capacity. Please try again later."}), 500
-
-    websocket_port, port = port_int + int(ApplicationConfig.WEBSOCKET_PORT_START), port_int + int(ApplicationConfig.VM_PORT_START)
-
     # Check if user already has a virtual machine
     if VirtualMachines.query.filter_by(user_id=user.id).count() > 0:
         return jsonify({
             "message": "Users may only have one virtual machine at a time. Please shut down your current virtual machine before creating a new one."
         }), 403
 
+    # If the server is at capacity, return an error
+    if VirtualMachines.query.count() >= int(ApplicationConfig.MAX_VM_COUNT):
+        return jsonify({"message": "Server is at capacity"}), 403
+
     try:
+        # Get the next available port
+        port = get_next_port()
+        port_int = int(port) - int(ApplicationConfig.VM_PORT_START)
+        websocket_port = int(ApplicationConfig.WEBSOCKET_PORT_START) + port_int
+
         create_log_directory(user.id)
         iso_dir = f"{ApplicationConfig.ISO_DIR}/{iso}"
         validate_iso(iso_dir)
@@ -250,11 +265,13 @@ async def create_vm():
         password = None
         if get_host_os_type() != "Darwin":
             # Wait for VM to start
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
 
             # Setup QMP and VNC password
             qmp = await setup_qmp_client(user.id)
+
             password = create_random_vnc_password()
+
             await qmp.execute("set_password", {"protocol": "vnc", "password": password})
 
         # Start websockify process
@@ -314,6 +331,7 @@ def delete_vm():
             stderr=subprocess.PIPE,
         )
         subprocess.Popen(["kill", str(vm.process_id)], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
     except subprocess.CalledProcessError:
         return jsonify({"message": "Error deleting virtual machine"}), 500
 
@@ -404,8 +422,33 @@ def get_vm_by_id():
     if vm.user_id != user.id:
         return jsonify({"message": "You can only get your own virtual machine"}), 403
 
+    name = None
+    version = None
+    desktop = None
+
+    # Get the name of the operating system, version and desktop environment
+    with open(f"{ApplicationConfig.ISO_DIR}/index.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+        for iso in data:
+            if iso["iso"] == vm.iso:
+                name = iso["name"]
+                version = iso["version"]
+                desktop = iso["desktop"]
+                homepage = iso["homepage"]
+                desktop_homepage = iso.get("desktop_homepage", None)
+                break
+
     return (
-        jsonify({"id": vm.id, "websocket_port": vm.websocket_port, "iso": vm.iso, "user_id": vm.user_id}),
+        jsonify({
+            "id": vm.id,
+            "websocket_port": vm.websocket_port,
+            "name": name,
+            "version": version,
+            "desktop": desktop,
+            "vnc_password": vm.vnc_password,
+            "homepage": homepage,
+            "desktop_homepage": desktop_homepage,
+        }),
         200,
     )
 

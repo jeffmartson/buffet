@@ -272,7 +272,6 @@ export async function changeEmail(
 /**
  * Change the role of a user
  * @param {string} user_id - The user ID
- * @param {string} role - The new role
  * @returns {Promise<ApiResponse>} - The response from the server
  */
 export async function banUser(

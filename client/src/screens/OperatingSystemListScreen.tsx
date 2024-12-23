@@ -68,7 +68,7 @@ interface Image {
 }
 
 interface VmDetails {
-  wsport: number;
+  websocket_port: number;
   id: number;
   name: string;
   version: string;
@@ -95,7 +95,7 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
   const [complexIso, setComplexIso] = useState("");
   const [complexityModal, showComplexityModal] = useState(false);
   const [vmDetails, setVmDetails] = useState<VmDetails>({
-    wsport: 0,
+    websocket_port: 0,
     id: 0,
     name: "",
     version: "",
@@ -155,7 +155,7 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
         const data = response.data;
         if (data) {
           setVmDetails({
-            wsport: data.wsport,
+            websocket_port: data.websocket_port,
             id: data.id,
             name: data.name,
             version: data.version,
@@ -174,7 +174,7 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
     const createVM = async () => {
       const response = await createVirtualMachine(iso);
       if (response.status === 201) {
-        navigate("/vm");
+        navigate("/view/");
       } else {
         showErrorModal(true);
         setErrorMessage(response.message);
@@ -229,9 +229,10 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
     const appElement = document.getElementById("app");
     if (appElement) {
       const protocol = import.meta.env.DEV || !import.meta.env.VITE_SSL_ENABLED ? "ws" : "wss";
+      const strippedAPIUrl = API_URL.replace(/:\d+$/, "");
       const rfb = new RFB(
         appElement,
-        `${protocol}://${import.meta.env.DEV ? 'localhost:5700' : `${API_URL}/websockify/${vmDetails.wsport}/`}`,
+        `${protocol}://${strippedAPIUrl}:${vmDetails.websocket_port}`,
         {
           credentials: {
             username: "",
@@ -244,7 +245,9 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
       rfb.scaleViewport = true;
       rfb.resizeSession = true;
     }
-  }, [vmDetails.password, vmDetails.wsport, API_URL]);
+
+
+  }, [vmDetails.password, vmDetails.websocket_port, API_URL]);
 
   useEffect(() => {
     // If the user has a VM running, connect to it
@@ -326,7 +329,7 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
                 </p>
                 <div id="app" style={{ width: "100%", height: "500px" }} />
                 <ButtonGroup className="d-flex mt-3">
-                  <Button variant="primary" href="/vm">
+                  <Button variant="primary" href="/view/">
                     View VM
                   </Button>
                   <Button variant="danger" onClick={deleteVMButton}>
@@ -594,7 +597,7 @@ const OperatingSystemListScreen: FC = (): ReactNode => {
             {errorMessage ===
               "Users may only have one virtual machine at a time. Please shut down your current virtual machine before creating a new one." ? (
               <ButtonGroup>
-                <Button variant="primary" href="/vm">
+                <Button variant="primary" href="/view/">
                   View VM
                 </Button>
                 <Button variant="danger" onClick={deleteVMButton}>

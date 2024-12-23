@@ -22,6 +22,11 @@ interface PasswordRequirementsProps {
     password: string;
 }
 
+/**
+ * PasswordRequirementsComponent displays the password requirements for a password input.
+ * @param {PasswordRequirementsProps} props - The properties of the component
+ * @returns {ReactNode} - The password requirements component
+ */
 const PasswordRequirementsComponent: React.FC<PasswordRequirementsProps> = ({ password }) => {
     const requirements = [
         { regex: /.{8,}/, label: 'At least 8 characters' },

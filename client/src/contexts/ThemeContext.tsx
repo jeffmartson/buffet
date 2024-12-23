@@ -22,7 +22,14 @@ interface ThemeContextProps {
   toggleTheme: () => void;
 }
 
-const ThemeContext = createContext<ThemeContextProps>({
+/**
+ * ThemeContext is the global dark/light theme context for the application.
+ * @type {React.Context<ThemeContextProps>} - The theme context
+ * @property {string} theme - The current theme of the application
+ * @property {() => void} toggleTheme - The function to toggle the theme of the application
+ * @returns {React.Context<ThemeContextProps>} - The theme context
+ */
+const ThemeContext: React.Context<ThemeContextProps> = createContext<ThemeContextProps>({
   theme: "light",
   toggleTheme: () => {
     return;

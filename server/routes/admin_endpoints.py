@@ -21,9 +21,10 @@ import subprocess
 from flask import Blueprint, jsonify, request
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from models import BannedUsers, UnverifiedUsers, Users, VirtualMachines, db
+from models import BannedUsers, UnverifiedUsers, Users, VirtualMachines, ApplicationConfigDb, db
 from password_strength import PasswordPolicy
 from config import ApplicationConfig
+from datetime import timedelta
 
 admin_endpoints = Blueprint("admin", __name__)
 Bcrypt = Bcrypt()
@@ -107,7 +108,7 @@ def get_all_vm():
         vms_list.append({
             "id": vm.id,
             "port": vm.port,
-            "wsport": vm.wsport,
+            "websocket_port": vm.websocket_port,
             "iso": vm.iso,
             "process_id": vm.process_id,
             "user_id": vm.user_id,
@@ -429,7 +430,7 @@ def get_user_vms():
         vms_list.append({
             "id": vm.id,
             "port": vm.port,
-            "wsport": vm.wsport,
+            "websocket_port": vm.websocket_port,
             "iso": vm.iso,
             "process_id": vm.process_id,
             "user_id": vm.user_id,
@@ -740,3 +741,58 @@ def verify_unverified_user():
     db.session.commit()
 
     return jsonify({"message": "Unverified user verified"}), 200
+
+
+@admin_endpoints.route("/api/admin/config/", methods=["GET"])
+@jwt_required()
+def get_config():
+    # Get the user from the authorization token
+    user = Users.query.filter_by(id=get_jwt_identity()).first()
+    if not user:
+        return jsonify({"message": "Invalid user"}), 401
+
+    # Ensure the user is an admin
+    if user.role != "admin":
+        return jsonify({"message": "Insufficient permissions"}), 403
+
+    config = ApplicationConfig.get_config() or {}
+    # Convert timedelta to string
+    for key, value in config.items():
+        if isinstance(value, timedelta):
+            config[key] = str(value)
+        # Ensure the key is set in ApplicationConfig
+        if hasattr(ApplicationConfig, key):
+            setattr(ApplicationConfig, key, value)
+    return jsonify(config)
+
+
+@admin_endpoints.route("/api/admin/config/update/", methods=["PUT"])
+@jwt_required()
+def update_config():
+    # Get the user from the authorization token
+    user = Users.query.filter_by(id=get_jwt_identity()).first()
+    if not user:
+        return jsonify({"message": "Invalid user"}), 401
+
+    # Ensure the user is an admin
+    if user.role != "admin":
+        return jsonify({"message": "Insufficient permissions"}), 403
+
+    # Get the new config from the request
+    new_config = request.json
+    if not new_config:
+        return jsonify({"message": "No config provided"}), 400
+
+    # Update the config in the database
+    for key, value in new_config.items():
+        config_entry = ApplicationConfigDb.query.filter_by(key=key).first()
+        if config_entry:
+            config_entry.value = value
+        else:
+            config_entry = ApplicationConfigDb(key=key, value=value)
+        config_entry.save()
+
+        # Update the environment variables
+        ApplicationConfig.__dict__[key] = value
+
+    return jsonify({"message": "Config updated"})

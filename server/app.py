@@ -30,12 +30,11 @@ from models import VirtualMachines, Users, db
 from routes.admin_endpoints import admin_endpoints
 from routes.user_endpoints import user_endpoints
 from routes.vm_endpoints import vm_endpoints
-from routes.config_endpoints import config_endpoints
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_bcrypt import generate_password_hash
 
 # Create Flask app
-app = Flask(__name__)  # __name__ is the name of the current Python module
+app = Flask(__name__, static_folder=ApplicationConfig.STATIC_DIR, template_folder=ApplicationConfig.STATIC_DIR)
 app.config.from_object(ApplicationConfig)  # Load config from config.py
 CORS(app, supports_credentials=True)  # Enable CORS for all routes
 Bcrypt = Bcrypt(app)  # Initialize Bcrypt for password hashing
@@ -54,7 +53,6 @@ if ApplicationConfig.LDAP_ENABLED:
 limiter.limit(ApplicationConfig.RATE_LIMIT)(user_endpoints)
 limiter.limit(ApplicationConfig.RATE_LIMIT)(vm_endpoints)
 limiter.limit(ApplicationConfig.RATE_LIMIT)(admin_endpoints)
-limiter.limit(ApplicationConfig.RATE_LIMIT)(config_endpoints)
 
 # Create database tables if they don't exist
 with app.app_context():
@@ -75,7 +73,6 @@ with app.app_context():
 app.register_blueprint(user_endpoints)
 app.register_blueprint(vm_endpoints)
 app.register_blueprint(admin_endpoints)
-app.register_blueprint(config_endpoints)
 
 app.wsgi_app = ProxyFix(
     app.wsgi_app, x_proto=1, x_host=1

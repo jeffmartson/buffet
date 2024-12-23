@@ -29,7 +29,7 @@ import {
 } from "../api/VirtualMachineAPI";
 
 interface VmDetails {
-  wsport: number;
+  websocket_port: number;
   id: number;
   name: string;
   version: string;
@@ -42,7 +42,7 @@ interface VmDetails {
 const VirtualMachineViewScreen: FC = (): ReactElement => {
   const cookies = new Cookies(null, { path: "/" });
   const [vmDetails, setVmDetails] = useState<VmDetails>({
-    wsport: 0,
+    websocket_port: 0,
     id: 0,
     name: "",
     version: "",
@@ -65,7 +65,7 @@ const VirtualMachineViewScreen: FC = (): ReactElement => {
       const data = response.data;
       if (data) {
         setVmDetails({
-          wsport: data.wsport,
+          websocket_port: data.websocket_port,
           id: data.id,
           name: data.name,
           version: data.version,
@@ -89,11 +89,11 @@ const VirtualMachineViewScreen: FC = (): ReactElement => {
   // Check for the cookie and conditionally open the modal
   useEffect(() => {
     const modalCookie = cookies.get("modalShown");
-    if (!modalCookie && vmDetails.wsport !== 0) {
+    if (!modalCookie && vmDetails.websocket_port !== 0) {
       setIsModalOpen(true);
       cookies.set("modalShown", "true", { path: "/" });
     }
-  }, [vmDetails.wsport]);
+  }, [vmDetails.websocket_port]);
 
   // Function to manually open the modal
   const handleOpenModal = () => {
@@ -103,7 +103,7 @@ const VirtualMachineViewScreen: FC = (): ReactElement => {
   // Deletes the virtual machine from the database and navigates to the home page
   const deleteVM = useCallback(() => {
     deleteVirtualMachine(String(vmDetails.id)).then(() => {
-      navigate("/os");
+      navigate("/list/");
     });
   }, [vmDetails.id, navigate]);
 
@@ -125,14 +125,15 @@ const VirtualMachineViewScreen: FC = (): ReactElement => {
     }
   };
 
-  // Connect to the virtual machine using noVNC when the wsport is set
+  // Connect to the virtual machine using noVNC when the websocket_port is set
   const connectToVM = useCallback(() => {
     const appElement = document.getElementById("app");
     if (appElement) {
       const protocol = import.meta.env.DEV || !import.meta.env.VITE_SSL_ENABLED ? "ws" : "wss";
+      const strippedAPIUrl = API_URL.replace(/:\d+$/, "");
       const rfb = new RFB(
         appElement,
-        `${protocol}://${import.meta.env.DEV ? 'localhost:5700' : `${API_URL}/websockify/${vmDetails.wsport}/`}`,
+        `${protocol}://${strippedAPIUrl}:${vmDetails.websocket_port}`,
         {
           credentials: {
             username: "",
@@ -153,18 +154,18 @@ const VirtualMachineViewScreen: FC = (): ReactElement => {
       });
 
       rfb.addEventListener("disconnect", () => {
-        navigate("/os");
+        navigate("/list/");
       });
     }
-  }, [API_URL, vmDetails.password, vmDetails.wsport]);
+  }, [API_URL, vmDetails.password, vmDetails.websocket_port]);
 
-  // Connect to the virtual machine when the wsport is set
+  // Connect to the virtual machine when the websocket_port is set
   useEffect(() => {
-    if (vmDetails.wsport !== 0) {
-      const timeout = setTimeout(connectToVM, 250);
+    if (vmDetails.websocket_port !== 0) {
+      const timeout = setTimeout(connectToVM, 500);
       return () => clearTimeout(timeout);
     }
-  }, [connectToVM, vmDetails.wsport]);
+  }, [connectToVM, vmDetails.websocket_port]);
 
   return (
     <div id="virtual-machine-view">
@@ -225,7 +226,7 @@ const VirtualMachineViewScreen: FC = (): ReactElement => {
           <Button disabled variant="dark">
             :: Buffet ::
           </Button>
-          <Button variant="primary" href="/os">
+          <Button variant="primary" href="/list/">
             Home
           </Button>
           <Button variant="info" onClick={() => handleOpenModal()}>

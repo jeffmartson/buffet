@@ -64,7 +64,7 @@ const LoginRegistrationScreen: FC = (): ReactElement => {
   }, []);
 
   const navigateToHome = () => {
-    navigate("/os");
+    navigate("/list/");
     navigate(0);
   };
 

@@ -22,10 +22,10 @@ import { Navigate } from "react-router-dom";
 import { AuthContext } from "../contexts/AuthContext";
 
 interface ProtectedRouteProps {
-  element: ReactNode; // The element to render
-  requiredRole?: string; // The role required to access the route
-  requireLogin?: boolean; // Whether the route requires the user to be logged in
-  preventForLoggedIn?: boolean; // Whether the route should be prevented for logged in users
+  element: ReactNode;
+  requiredRole?: string;
+  requireLogin?: boolean;
+  preventForLoggedIn?: boolean;
 }
 
 /**
@@ -45,18 +45,18 @@ const ProtectedRoute: FC<ProtectedRouteProps> = ({
 
   // If the user is not logged in and the route requires a login, redirect to the login page
   if (requireLogin && !user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login/" />;
   }
 
   // If the user is logged in and the route is for users who are not logged in, redirect to the OS page
   if (preventForLoggedIn && user) {
-    return <Navigate to="/os" />;
+    return <Navigate to="/list/" />;
   }
 
   // If the user is logged in and the route requires a role, check if the user has the required role
   if (requireLogin && requiredRole && user) {
     if (user.role !== requiredRole) {
-      return <Navigate to="/os" />;
+      return <Navigate to="/list/" />;
     }
   }
 

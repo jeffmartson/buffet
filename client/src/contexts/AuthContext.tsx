@@ -34,7 +34,16 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+/**
+ * useAuth is a custom hook to use the AuthContext.
+ * @returns {AuthContextType} - The authentication context
+ * @throws {Error} - If the hook is not used within an AuthProvider
+ * @example
+ * const { user, logout, setUser } = useAuth();
+ * setUser({ id: '1', username: 'user', email: 'user@user.com', role: 'user', two_factor_enabled: false });
+ * logout();
+ */
+export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");

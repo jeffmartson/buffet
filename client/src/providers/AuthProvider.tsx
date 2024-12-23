@@ -6,7 +6,17 @@ import { getUserDetails, logOut } from "../api/AccountsAPI";
 interface AuthProviderProps {
     children: ReactNode;
 }
-
+/**
+ * AuthProvider component to provide user authentication and logout functionality to the application.
+ * @param {AuthProviderProps} props - The properties of the component
+ * @returns {ReactNode} - The authentication provider component
+ * @example
+ * return (
+ *  <AuthProvider>
+ *   <App />
+ * </AuthProvider>
+ * );
+ */
 const AuthProvider: FC<AuthProviderProps> = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(() => {
         const storedUser = sessionStorage.getItem("user");
@@ -14,31 +24,36 @@ const AuthProvider: FC<AuthProviderProps> = ({ children }: AuthProviderProps) =>
     });
     const navigate = useNavigate();
 
-    // Get the user details when the component mounts, except when on the home page
     useEffect(() => {
         if (!user && window.location.pathname !== "/") {
             getUserDetails().then((response) => {
                 if (response.status === 200) {
-                    setUser(response.data as User); // Set the user in the context
-                    sessionStorage.setItem("user", JSON.stringify(response.data)); // Store user in sessionStorage
+                    setUser(response.data as User);
+                    sessionStorage.setItem("user", JSON.stringify(response.data));
                 }
             });
         }
     }, [user]);
 
-    // Logout function, clears the user from the context and redirects to the home page
-    const logout = () => {
+    /**
+     * logout function to log the user out of the application.
+     * @returns {void}
+     * @example
+     * logout();
+     * navigate("/");
+     * navigate(0);
+     */
+    const logout = (): void => {
         logOut().then((response: { status: number; }) => {
             if (response.status === 200) {
-                navigate("/"); // Redirect to the home page
+                navigate("/");
                 navigate(0);
                 setUser(null);
-                sessionStorage.removeItem("user"); // Remove user from sessionStorage
+                sessionStorage.removeItem("user");
             }
         });
     };
 
-    // Provide the user and logout function to the context
     return (
         <AuthContext.Provider value={{ user, logout, setUser }}>
             {children}

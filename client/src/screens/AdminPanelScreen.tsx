@@ -81,7 +81,7 @@ interface VM {
   desktop: string;
   iso: string;
   port: number;
-  wsport: number;
+  websocket_port: number;
 }
 
 const AdminPanelScreen: FC = (): ReactElement => {
@@ -538,7 +538,7 @@ const AdminPanelScreen: FC = (): ReactElement => {
                         <Card.Text>User ID: {vm.user_id}</Card.Text>
                         <Card.Text>VM ID: {vm.id}</Card.Text>
                         <Card.Text>Port: {vm.port}</Card.Text>
-                        <Card.Text>Websocket Port: {vm.wsport}</Card.Text>
+                        <Card.Text>Websocket Port: {vm.websocket_port}</Card.Text>
                       </Card.Body>
                       <Card.Footer>
                         <Button
